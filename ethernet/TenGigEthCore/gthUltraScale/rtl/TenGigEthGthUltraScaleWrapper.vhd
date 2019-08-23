@@ -65,11 +65,11 @@ entity TenGigEthGthUltraScaleWrapper is
       phyReady            : out slv(NUM_LANE_G-1 downto 0);
       gtClk               : out sl;
       -- Transceiver Debug Interface
-      gtTxPreCursor       : in  slv(4 downto 0)                                := "00000";
-      gtTxPostCursor      : in  slv(4 downto 0)                                := "00000";
-      gtTxDiffCtrl        : in  slv(3 downto 0)                                := "1110";
-      gtRxPolarity        : in  sl                                             := '0';
-      gtTxPolarity        : in  sl                                             := '0';
+      gtTxPreCursor       : in  Slv5Array(NUM_LANE_G-1 downto 0)               := (others => "00000");
+      gtTxPostCursor      : in  Slv5Array(NUM_LANE_G-1 downto 0)               := (others => "00000");
+      gtTxDiffCtrl        : in  Slv4Array(NUM_LANE_G-1 downto 0)               := (others => "1110");
+      gtRxPolarity        : in  slv(NUM_LANE_G-1 downto 0)                     := (others => '0');
+      gtTxPolarity        : in  slv(NUM_LANE_G-1 downto 0)                     := (others => '0');
       -- MGT Clock Port (156.25 MHz)
       gtRefClk            : in  sl                                             := '0';
       gtRefClkBufg        : in  sl                                             := '0';
@@ -178,11 +178,11 @@ begin
             phyRst             => phyRst(i),
             phyReady           => phyReady(i),
             -- Transceiver Debug Interface
-            gtTxPreCursor      => gtTxPreCursor,
-            gtTxPostCursor     => gtTxPostCursor,
-            gtTxDiffCtrl       => gtTxDiffCtrl,
-            gtRxPolarity       => gtRxPolarity,
-            gtTxPolarity       => gtTxPolarity,
+            gtTxPreCursor      => gtTxPreCursor(i),
+            gtTxPostCursor     => gtTxPostCursor(i),
+            gtTxDiffCtrl       => gtTxDiffCtrl(i),
+            gtRxPolarity       => gtRxPolarity(i),
+            gtTxPolarity       => gtTxPolarity(i),
             -- Quad PLL Ports
             qplllock           => qplllock,
             qplloutclk         => qplloutclk,
