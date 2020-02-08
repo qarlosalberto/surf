@@ -89,8 +89,21 @@ architecture rtl of Pgp3RxProtocol is
    signal phyRxActiveSyncFall : sl;
    signal phyRxActiveSync     : sl;
 
+   component ila_0
+     port ( clk    : in sl;
+            probe0 : in slv(255 downto 0) );
+   end component;
+   
 begin
 
+  U_ILA : ila_0
+    port map ( clk                  => pgpRxClk,
+               probe0( 7 downto  0) => protRxData(PGP3_BTF_FIELD_C),
+               probe0(           8) => protRxValid,
+               probe0(72 downto  9) => protRxData,
+               probe0(74 downto 73) => protRxHeader,
+               probe0(255 downto 75) => (others=>'0') );
+               
    U_SynchronizerEdge_1 : entity work.SynchronizerEdge
       generic map (
          TPD_G => TPD_G)

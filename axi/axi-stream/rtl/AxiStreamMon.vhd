@@ -41,7 +41,9 @@ entity AxiStreamMon is
       frameRateMin : out slv(31 downto 0);             -- units of Hz
       bandwidth    : out slv(63 downto 0);             -- units of Byte/s
       bandwidthMax : out slv(63 downto 0);             -- units of Byte/s
-      bandwidthMin : out slv(63 downto 0));            -- units of Byte/s
+      bandwidthMin : out slv(63 downto 0);             -- units of Byte/s
+      validCnt     : out slv(31 downto 0);
+      nReadyCnt    : out slv(31 downto 0));
 end AxiStreamMon;
 
 architecture rtl of AxiStreamMon is
@@ -61,6 +63,10 @@ architecture rtl of AxiStreamMon is
       bandwidth    : slv(39 downto 0);
       bandwidthMax : slv(39 downto 0);
       bandwidthMin : slv(39 downto 0);
+      validCnt     : slv(28 downto 0);
+      nReadyCnt    : slv(28 downto 0);
+      validCntL    : slv(28 downto 0);
+      nReadyCntL   : slv(28 downto 0);
    end record;
 
    constant REG_INIT_C : RegType := (
@@ -74,7 +80,11 @@ architecture rtl of AxiStreamMon is
       accum        => (others => '0'),
       bandwidth    => (others => '0'),
       bandwidthMax => (others => '0'),
-      bandwidthMin => (others => '0'));
+      bandwidthMin => (others => '0'),
+      validCnt     => (others => '0'),
+      nReadyCnt    => (others => '0'),
+      validCntL    => (others => '0'),
+      nReadyCntL   => (others => '0'));
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -172,6 +182,13 @@ begin
          v.tKeep(TKEEP_C-1 downto 0) := axisMaster.tKeep(TKEEP_C-1 downto 0);
       end if;
 
+      if axisMaster.tValid = '1' then
+        v.validCnt := r.validCnt+1;
+        if axisSlave.tReady = '0' then
+          v.nReadyCnt := r.nReadyCnt+1;
+        end if;
+      end if;
+      
       -- Check if last cycle had data moving
       if r.tValid = '1' then
          -- Update the accumulator 
@@ -192,6 +209,10 @@ begin
          -- Update the bandwidth measurement
          v.updated   := '1';
          v.bandwidth := r.accum;
+         v.validCntL  := r.validCnt;
+         v.nreadyCntL := r.nreadyCnt;
+         v.validCnt   := (others=>'0');
+         v.nReadyCnt  := (others=>'0');
          -- Reset the accumulator
          if r.tValid = '0' then
             v.accum := (others => '0');
@@ -288,5 +309,19 @@ begin
    bandwidth    <= x"000000" & bw;
    bandwidthMax <= x"000000" & bwMax;
    bandwidthMin <= x"000000" & bwMin;
+
+   SyncOut_ValidCnt : entity work.SynchronizerVector
+     generic map ( WIDTH_G => 29 )
+     port map ( clk     => statusClk,
+                dataIn  => r.validCntL,
+                dataOut => validCnt(28 downto 0) );
+   validCnt(31 downto 29) <= "000";
+
+   SyncOut_nReadyCnt : entity work.SynchronizerVector
+     generic map ( WIDTH_G => 29 )
+     port map ( clk     => statusClk,
+                dataIn  => r.nReadyCntL,
+                dataOut => nReadyCnt(28 downto 0) );
+   nReadyCnt(31 downto 29) <= "000";
 
 end rtl;

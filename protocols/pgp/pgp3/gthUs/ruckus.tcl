@@ -10,6 +10,9 @@ if { $::env(VIVADO_VERSION) >= 2017.3 } {
    loadSource   -path "$::DIR_PATH/ip/Pgp3GthUsIp10G/Pgp3GthUsIp10G.dcp"
    # loadIpCore -path "$::DIR_PATH/ip/Pgp3GthUsIp10G/Pgp3GthUsIp10G.xci"
    
+   loadSource   -path "$::DIR_PATH/ip/Pgp3GthUsIp186/Pgp3GthUsIp186.dcp"
+   # loadIpCore -path "$::DIR_PATH/ip/Pgp3GthUsIp186/Pgp3GthUsIp186.xci"
+   
    loadSource   -path "$::DIR_PATH/ip/Pgp3GthUsIp6G/Pgp3GthUsIp6G.dcp"
    # loadIpCore -path "$::DIR_PATH/ip/Pgp3GthUsIp6G/Pgp3GthUsIp6G.xci"
 

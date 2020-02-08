@@ -77,6 +77,8 @@ architecture rtl of AxiStreamMonAxiL is
    signal axisReset  : sl;
 
    signal frameRate : Slv32Array(AXIS_NUM_SLOTS_G-1 downto 0);
+   signal validCnt  : Slv32Array(AXIS_NUM_SLOTS_G-1 downto 0);
+   signal nReadyCnt : Slv32Array(AXIS_NUM_SLOTS_G-1 downto 0);
    signal bandwidth : Slv64Array(AXIS_NUM_SLOTS_G-1 downto 0);
 
    -- attribute dont_touch          : string;
@@ -114,11 +116,13 @@ begin
             statusClk  => axilClk,
             statusRst  => r.rstCnt,
             frameRate  => frameRate(i),
-            bandwidth  => bandwidth(i));
+            bandwidth  => bandwidth(i),
+            validCnt   => validCnt (i),
+            nReadyCnt  => nReadyCnt(i));
 
    end generate;
 
-   comb : process (axilRst, bandwidth, frameRate, r, sAxilReadMaster,
+   comb : process (axilRst, bandwidth, frameRate, validCnt, nReadyCnt, r, sAxilReadMaster,
                    sAxilWriteMaster) is
       variable v      : RegType;
       variable regCon : AxiLiteEndPointType;
@@ -131,6 +135,11 @@ begin
          v.bandwidth(i) := bandwidth(i);
       end loop;
 
+      for i in 0 to (AXIS_NUM_SLOTS_G-1) loop
+        v.frameRateMax(i) := validCnt (i);
+        v.frameRateMin(i) := nReadyCnt(i);
+      end loop;
+      
       if r.rstCnt = '1' then
          for i in 0 to (AXIS_NUM_SLOTS_G-1) loop
             v.frameRateMax(i) := frameRate(i);
@@ -140,12 +149,12 @@ begin
          end loop;
       else
          for i in 0 to (AXIS_NUM_SLOTS_G-1) loop
-            if r.frameRate(i) > r.frameRateMax(i) then
-               v.frameRateMax(i) := r.frameRate(i);
-            end if;
-            if r.frameRate(i) < r.frameRateMin(i) then
-               v.frameRateMin(i) := r.frameRate(i);
-            end if;
+            --if r.frameRate(i) > r.frameRateMax(i) then
+            --   v.frameRateMax(i) := r.frameRate(i);
+            --end if;
+            --if r.frameRate(i) < r.frameRateMin(i) then
+            --   v.frameRateMin(i) := r.frameRate(i);
+            --end if;
             if r.bandwidth(i) > r.bandwidthMax(i) then
                v.bandwidthMax(i) := r.bandwidth(i);
             end if;
