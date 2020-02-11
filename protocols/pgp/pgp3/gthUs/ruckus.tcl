@@ -15,6 +15,9 @@ if { $::env(VIVADO_VERSION) >= 2017.3 } {
 
    loadSource -lib surf   -path "$::DIR_PATH/ip/Pgp3GthUsIp3G/Pgp3GthUsIp3G.dcp"
    # loadIpCore -path "$::DIR_PATH/ip/Pgp3GthUsIp3G/Pgp3GthUsIp3G.xci"
+
+   loadSource -lib surf   -path "$::DIR_PATH/ip/Pgp3GthUsIp186/Pgp3GthUsIp186.dcp"
+   # loadIpCore -path "$::DIR_PATH/ip/Pgp3GthUsIp186/Pgp3GthUsIp186.xci"
    
 } else {
    puts "\n\nWARNING: $::DIR_PATH requires Vivado 2017.3 (or later)\n\n"
