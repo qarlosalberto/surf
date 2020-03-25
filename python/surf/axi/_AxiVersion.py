@@ -183,6 +183,7 @@ class AxiVersion(pr.Device):
             base         = pr.UInt,
             mode         = 'RO',
             hidden       = True,
+            groups       = ['NoPVA']
         ))
 
         self.add(pr.LinkVariable(
