@@ -29,9 +29,11 @@ use surf.Pgp3Pkg.all;
 entity Pgp3TxLite is
 
    generic (
-      TPD_G    : time                  := 1 ns;
+      TPD_G          : time                  := 1 ns;
       -- PGP configuration
-      NUM_VC_G : integer range 1 to 16 := 1);
+      NUM_VC_G       : integer range 1 to 16 := 1;
+      SKIP_EN_G      : boolean               := false;
+      FLOW_CTRL_EN_G : boolean               := false);
    port (
       -- Transmit interface
       pgpTxClk     : in  sl;
@@ -60,18 +62,16 @@ end entity Pgp3TxLite;
 architecture rtl of Pgp3TxLite is
 
    -- Synchronized statuses
-   signal syncLocRxFifoCtrl  : AxiStreamCtrlArray(NUM_VC_G-1 downto 0);
-   signal syncLocRxLinkReady : sl;
-   signal syncRemRxFifoCtrl  : AxiStreamCtrlArray(NUM_VC_G-1 downto 0);
-   signal syncRemRxLinkReady : sl;
+   signal syncLocRxFifoCtrl  : AxiStreamCtrlArray(NUM_VC_G-1 downto 0) := (others => AXI_STREAM_CTRL_UNUSED_C);
+   signal syncLocRxLinkReady : sl                                      := '1';
+   signal syncRemRxFifoCtrl  : AxiStreamCtrlArray(NUM_VC_G-1 downto 0) := (others => AXI_STREAM_CTRL_UNUSED_C);
+   signal syncRemRxLinkReady : sl                                      := '1';
 
    -- Pipeline signals
-   signal disableSel         : slv(NUM_VC_G-1 downto 0);
-   signal rearbitrate        : sl := '0';
-   signal muxedTxMaster      : AxiStreamMasterType;
-   signal muxedTxSlave       : AxiStreamSlaveType;
-   signal packetizedTxMaster : AxiStreamMasterType;
-   signal packetizedTxSlave  : AxiStreamSlaveType;
+   signal disableSel    : slv(NUM_VC_G-1 downto 0);
+   signal rearbitrate   : sl := '0';
+   signal muxedTxMaster : AxiStreamMasterType;
+   signal muxedTxSlave  : AxiStreamSlaveType;
 
    signal phyTxActiveL : sl;
    signal protTxValid  : sl;
@@ -82,56 +82,58 @@ architecture rtl of Pgp3TxLite is
 
 begin
 
-   -- Synchronize remote link and fifo status to tx clock
-   U_Synchronizer_REM : entity surf.Synchronizer
-      generic map (
-         TPD_G => TPD_G)
-      port map (
-         clk     => pgpTxClk,                              -- [in]
-         rst     => pgpTxRst,                              -- [in]
-         dataIn  => remRxLinkReady,                        -- [in]
-         dataOut => syncRemRxLinkReady);                   -- [out]
-   REM_STATUS_SYNC : for i in NUM_VC_G-1 downto 0 generate
-      U_SynchronizerVector_1 : entity surf.SynchronizerVector
+   FLOW_CTRL_SYNC : if (FLOW_CTRL_EN_G) generate
+      -- Synchronize remote link and fifo status to tx clock
+      U_Synchronizer_REM : entity surf.Synchronizer
          generic map (
-            TPD_G   => TPD_G,
-            WIDTH_G => 2)
+            TPD_G => TPD_G)
          port map (
-            clk        => pgpTxClk,                        -- [in]
-            rst        => pgpTxRst,                        -- [in]
-            dataIn(0)  => remRxFifoCtrl(i).pause,          -- [in]
-            dataIn(1)  => remRxFifoCtrl(i).overflow,       -- [in]
-            dataOut(0) => syncRemRxFifoCtrl(i).pause,      -- [out]
-            dataOut(1) => syncRemRxFifoCtrl(i).overflow);  -- [out]
-   end generate;
+            clk     => pgpTxClk,                              -- [in]
+            rst     => pgpTxRst,                              -- [in]
+            dataIn  => remRxLinkReady,                        -- [in]
+            dataOut => syncRemRxLinkReady);                   -- [out]
+      REM_STATUS_SYNC : for i in NUM_VC_G-1 downto 0 generate
+         U_SynchronizerVector_1 : entity surf.SynchronizerVector
+            generic map (
+               TPD_G   => TPD_G,
+               WIDTH_G => 2)
+            port map (
+               clk        => pgpTxClk,                        -- [in]
+               rst        => pgpTxRst,                        -- [in]
+               dataIn(0)  => remRxFifoCtrl(i).pause,          -- [in]
+               dataIn(1)  => remRxFifoCtrl(i).overflow,       -- [in]
+               dataOut(0) => syncRemRxFifoCtrl(i).pause,      -- [out]
+               dataOut(1) => syncRemRxFifoCtrl(i).overflow);  -- [out]
+      end generate;
 
-   -- Synchronize local rx status
-   U_Synchronizer_LOC : entity surf.Synchronizer
-      generic map (
-         TPD_G => TPD_G)
-      port map (
-         clk     => pgpTxClk,                           -- [in]
-         rst     => pgpTxRst,                           -- [in]
-         dataIn  => locRxLinkReady,                     -- [in]
-         dataOut => syncLocRxLinkReady);                -- [out]
-   LOC_STATUS_SYNC : for i in NUM_VC_G-1 downto 0 generate
-      U_Synchronizer_pause : entity surf.Synchronizer
+      -- Synchronize local rx status
+      U_Synchronizer_LOC : entity surf.Synchronizer
          generic map (
             TPD_G => TPD_G)
          port map (
-            clk     => pgpTxClk,                        -- [in]
-            rst     => pgpTxRst,                        -- [in]
-            dataIn  => locRxFifoCtrl(i).pause,          -- [in]
-            dataOut => syncLocRxFifoCtrl(i).pause);     -- [out]
-      U_Synchronizer_overflow : entity surf.SynchronizerOneShot
-         generic map (
-            TPD_G => TPD_G)
-         port map (
-            clk     => pgpTxClk,                        -- [in]
-            rst     => pgpTxRst,                        -- [in]
-            dataIn  => locRxFifoCtrl(i).overflow,       -- [in]
-            dataOut => syncLocRxFifoCtrl(i).overflow);  -- [out]
-   end generate;
+            clk     => pgpTxClk,                           -- [in]
+            rst     => pgpTxRst,                           -- [in]
+            dataIn  => locRxLinkReady,                     -- [in]
+            dataOut => syncLocRxLinkReady);                -- [out]
+      LOC_STATUS_SYNC : for i in NUM_VC_G-1 downto 0 generate
+         U_Synchronizer_pause : entity surf.Synchronizer
+            generic map (
+               TPD_G => TPD_G)
+            port map (
+               clk     => pgpTxClk,                        -- [in]
+               rst     => pgpTxRst,                        -- [in]
+               dataIn  => locRxFifoCtrl(i).pause,          -- [in]
+               dataOut => syncLocRxFifoCtrl(i).pause);     -- [out]
+         U_Synchronizer_overflow : entity surf.SynchronizerOneShot
+            generic map (
+               TPD_G => TPD_G)
+            port map (
+               clk     => pgpTxClk,                        -- [in]
+               rst     => pgpTxRst,                        -- [in]
+               dataIn  => locRxFifoCtrl(i).overflow,       -- [in]
+               dataOut => syncLocRxFifoCtrl(i).overflow);  -- [out]
+      end generate;
+   end generate FLOW_CTRL_SYNC;
 
    -- Use synchronized remote status to disable channels from mux selection
    -- All flow control overriden by pgpTxIn 'disable' and 'flowCntlDis'
@@ -180,8 +182,11 @@ begin
    -- Translates Packetizer2 frames, status, and opcodes into unscrambled 64b66b charachters
    U_Pgp3TxProtocolLite_1 : entity surf.Pgp3TxProtocolLite
       generic map (
-         TPD_G    => TPD_G,
-         NUM_VC_G => NUM_VC_G)
+         TPD_G          => TPD_G,
+         NUM_VC_G       => NUM_VC_G,
+         SKIP_EN_G      => SKIP_EN_G,
+         FLOW_CTRL_EN_G => FLOW_CTRL_EN_G,
+         STARTUP_HOLD_G => 0)
       port map (
          pgpTxClk       => pgpTxClk,            -- [in]
          pgpTxRst       => pgpTxRst,            -- [in]

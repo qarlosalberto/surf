@@ -66,7 +66,7 @@ begin
    pgpTxMaster.tData(63 downto 0) <= txData;
    pgpTxMaster.tKeep(7 downto 0)  <= X"FF";
    pgpTxMaster.tUser(1)           <= txSof;
-   pgpTxMaster.tUser(56)          <= txEofe;
+   pgpTxMaster.tUser(14)          <= txEofe;
    pgpTxMaster.tLast              <= txEof;
 
    U_Pgp3TxLite_1 : entity work.Pgp3TxLite
