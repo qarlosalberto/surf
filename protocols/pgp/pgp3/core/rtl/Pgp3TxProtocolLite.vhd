@@ -201,9 +201,9 @@ begin
       v.pgpTxSlave.tReady := '0';
       v.opCodeReady       := '0';
 
-      v.frameTx    := '0';
-      v.frameTxErr := '0';
-      v.crcReset   := '0';
+      v.frameTx      := '0';
+      v.frameTxErr   := '0';
+      v.crcReset     := '0';
       v.crcDataValid := '0';
 
       -- Check the handshaking
@@ -271,9 +271,9 @@ begin
                   v.crcDataValid            := '1';
                   if (pgpTxMaster.tLast = '1') then
                      v.doEof      := '1';
-                     v.tUserLast  := axiStreamGetUserField(PGP3_AXIS_CONFIG_C, pgpTxMaster);
+                     v.tUserLast  := pgpTxMaster.tUser(15 downto 14);
                      v.frameTx    := '1';
-                     v.frameTxErr := v.frameTx and ssiGetUserEofe(PGP3_AXIS_CONFIG_C, pgpTxMaster);
+                     v.frameTxErr := v.frameTx and pgpTxMaster.tUser(14);
                   end if;
                end if;
             end if;
