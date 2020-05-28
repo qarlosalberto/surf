@@ -34,6 +34,7 @@ entity Pgp3TxLiteWrapper is
       txReady    : out sl;
       txValid    : in  sl;
       txData     : in  slv(63 downto 0);
+      txFrame    : in  sl;
       txSof      : in  sl;
       txEof      : in  sl;
       txEofe     : in  sl;
@@ -77,6 +78,7 @@ begin
          pgpTxRst        => rst,                       -- [in]
          pgpTxIn         => pgpTxIn,                   -- [in]
          pgpTxOut        => open,                      -- [out]
+         pgpTxActive     => txFrame,                   -- [in]
          pgpTxMasters(0) => pgpTxMaster,               -- [in]
          pgpTxSlaves(0)  => pgpTxSlave,                -- [out]
 --          locRxFifoCtrl  => locRxFifoCtrl,   -- [in]

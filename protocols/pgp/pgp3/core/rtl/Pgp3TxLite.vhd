@@ -40,6 +40,7 @@ entity Pgp3TxLite is
       pgpTxRst     : in  sl;
       pgpTxIn      : in  Pgp3TxInType := PGP3_TX_IN_INIT_C;
       pgpTxOut     : out Pgp3TxOutType;
+      pgpTxActive  : in  sl;
       pgpTxMasters : in  AxiStreamMasterArray(NUM_VC_G-1 downto 0);
       pgpTxSlaves  : out AxiStreamSlaveArray(NUM_VC_G-1 downto 0);
 
@@ -192,6 +193,7 @@ begin
          pgpTxRst       => pgpTxRst,            -- [in]
          pgpTxIn        => pgpTxIn,             -- [in]
          pgpTxOut       => pgpTxOut,            -- [out]
+         pgpTxActive    => pgpTxActive,         -- [in]
          pgpTxMaster    => muxedTxMaster,       -- [in]
          pgpTxSlave     => muxedTxSlave,        -- [out]
          locRxFifoCtrl  => syncLocRxFifoCtrl,   -- [in]
